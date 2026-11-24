@@ -1,65 +1,93 @@
-"""Drive the plugin through the core's registry without installing it."""
-
-import asyncio
 import json
+import os
+import tempfile
 import unittest
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from unittest import mock
 
-from action_platform.core.flow import gitflow
-from action_platform.core.scaffold.catalog import Matrix, with_plugin_clouds
-from action_platform.core.wiring import wired
-from action_platform.plugins import Loaded, Plugins, PluginState, registry
+from action_platform.core.service_access import AccessError
+from action_platform.plugins.options import FileOptions
 
-from apx_example import ExamplePlugin
-from apx_example.release import Calver, Plain
+from apx_sentry import SentryPlugin
+from apx_sentry.access import SentryProvider
+from apx_sentry.settings import connect, credentials
 
 
-class ExamplePluginTest(unittest.TestCase):
+class Options(unittest.TestCase):
     def setUp(self):
-        self.tmp = TemporaryDirectory()
-        self.plugins = Plugins(
-            [Loaded(ExamplePlugin(), "apx-example-example", "0.1.0")],
-            PluginState(file=Path(self.tmp.name) / "plugins.json"),
+        self.dir = tempfile.TemporaryDirectory()
+        self.options = FileOptions("sentry", Path(self.dir.name))
+        self.env = mock.patch.dict(
+            os.environ,
+            {k: v for k, v in os.environ.items() if not k.startswith("AP_SENTRY_")},
+            clear=True,
         )
-        registry._current = self.plugins
-        self.addCleanup(registry.reset)
-        self.addCleanup(wired.restore, "gitflow_rules")
-        self.addCleanup(self.tmp.cleanup)
+        self.env.start()
 
-    def test_tool_is_prefixed_and_answers(self):
-        from action_platform.mcp import server
+    def tearDown(self):
+        self.env.stop()
+        self.dir.cleanup()
 
-        mcp = server.build()
-        names = {t.name for t in asyncio.run(mcp.list_tools())}
 
-        self.assertIn("example_hello", names)
+class Declaration(unittest.TestCase):
+    def test_the_plugin_declares_what_it_reads_and_touches(self):
+        plugin = SentryPlugin()
 
-        result = asyncio.run(mcp.call_tool("example_hello", {"name": "you"}))
+        self.assertEqual(
+            (plugin.slug, plugin.name, plugin.min_core), ("sentry", "Sentry", "0.33")
+        )
+        self.assertEqual([o.key for o in plugin.options], ["org", "token", "url"])
+        self.assertEqual(
+            {o.key: o.kind for o in plugin.options},
+            {"org": "text", "token": "secret", "url": "url"},
+        )
+        self.assertTrue(any("AP_SENTRY_TOKEN" in n for n in plugin.needs))
+        self.assertTrue(any("sentry.io" in n for n in plugin.needs))
 
-        self.assertEqual(json.loads(result.content[0].text)["greeting"], "hello you")
 
-    def test_rules_are_replaced_while_enabled(self):
-        self.plugins.register()
+class Access(Options):
+    def test_no_organization_means_no_access(self):
+        self.assertIsNone(SentryPlugin().access(self.options))
 
-        self.assertIsNotNone(gitflow.check_branch("chore/1"))
+    def test_a_missing_token_is_named(self):
+        self.options.set("org", "acme")
 
-        self.plugins.disable("example")
+        with self.assertRaisesRegex(AccessError, "token"):
+            SentryPlugin().access(self.options)
 
-        self.assertIsNone(gitflow.check_branch("chore/1"))
+    def test_the_provider_is_built_from_the_options(self):
+        self.options.set("org", "acme")
+        self.options.set("token", "t")
+        self.options.set("url", "https://sentry.example.com")
 
-    def test_overlay_joins_the_matrix(self):
-        merged = with_plugin_clouds(Matrix.from_dict({"clouds": []}))
+        provider = SentryPlugin().access(self.options)
 
-        self.assertEqual([c.name for c in merged.clouds], ["example"])
-        self.assertEqual(merged.cloud("example").source, "example")
+        self.assertIsInstance(provider, SentryProvider)
+        self.assertEqual(provider.org, "acme")
+        self.assertEqual(provider.http.base, "https://sentry.example.com")
 
-    def test_an_option_can_carry_a_setup_button(self):
-        greeting = next(o for o in ExamplePlugin.options if o.key == "greeting")
+    def test_access_ignores_the_environment(self):
+        with mock.patch.dict(os.environ, {"AP_SENTRY_ORG": "env-org"}):
+            self.assertIsNone(SentryPlugin().access(self.options))
 
-        self.assertEqual(greeting.as_dict()["action_label"], "Open the docs")
-        self.assertIn("{organization}", greeting.action_url)
 
-    def test_release_providers(self):
-        self.assertTrue(Calver().next("1.0.0", "patch", False, []).count(".") == 2)
-        self.assertIn("- feat: x", Plain().render("1.0.0", ["feat: x"]))
+class Settings(Options):
+    def test_the_environment_wins_over_the_options_file(self):
+        self.options.set("org", "file-org")
+        self.options.set("token", "file-token")
+
+        with mock.patch.dict(os.environ, {"AP_SENTRY_ORG": "env-org"}):
+            org, token, url = credentials(self.options)
+
+        self.assertEqual(
+            (org, token, url), ("env-org", "file-token", "https://sentry.io")
+        )
+
+    def test_missing_keys_are_named(self):
+        with self.assertRaisesRegex(AccessError, "AP_SENTRY_ORG, AP_SENTRY_TOKEN"):
+            connect(self.options)
+
+    def test_the_file_is_plain_json(self):
+        self.options.set("org", "acme")
+
+        self.assertEqual(json.loads(self.options.file.read_text()), {"org": "acme"})
