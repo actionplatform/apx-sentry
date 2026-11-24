@@ -1,20 +1,25 @@
 # AGENTS.md
 
-Rules an AI agent (or a new contributor) follows in this repository — and in any `apx-<slug>` started from it.
+Rules an AI agent (or a new contributor) follows in this repository.
 
 ## What this is
 
-A template for an Action Platform plugin. The contract is `SPEC.md`; the skill in `skills/create-plugin/` walks through creating a plugin from here. Read `SPEC.md` before changing anything.
+`apx-sentry`, an Action Platform plugin for [Sentry](https://sentry.io): the access provider the core's access engine drives, and read-only tools for a release's new issues and the errors after a deploy. The contract every plugin follows is `SPEC.md` in [apx-example](https://github.com/actionplatform/apx-example); read it before changing the shape of anything here.
+
+## How it works
+
+- `access.py` is the `AccessProvider`: organization members with their role, team members with their team role, invitations by email, never the last owner. The core's `Access` engine reads, diffs and applies; nothing here decides policy.
+- `observe.py` reads issues through the REST API with the core's `Http`; `tools.py` and `cli.py` only present it.
+- `SentryPlugin.access(options)` reads `options` and nothing else. The tools and the CLI resolve a setting from `AP_SENTRY_<KEY>` first, then the options file (`settings.py`).
 
 ## Code
 
 - Python 3.11+, `ruff check . && ruff format --check .`, `pytest` green before a commit.
-- No comments inside function bodies; no test docstrings. Module docstrings say what the module is for.
-- `register` declares only — no I/O, threads or connections at import or in `register`.
-- Never monkey-patch `action_platform.*`; replace a slot or ask for a hook.
-- Long commands go through `action_platform.core.process.stream` so their output reaches the platform's job log.
+- No comments in code; no test docstrings. Module docstrings say what the module is for.
+- `register` declares only: no I/O at import or in `register`.
+- Never monkey-patch `action_platform.*`.
+- Tests drive `tests/fake.py`, which answers only the routes and fields Sentry's API documents; `tests/live/` is read-only and runs only with `AP_SENTRY_LIVE=1`.
 - `needs` lists every host and environment variable the plugin touches.
-- One ABC per responsibility (`abc.py`), a `Spec` per call, the target composing them through `parts()`; `tests/fake.py` built from the real service's answers, `tests/live/` against the real destination.
 
 ## Commits and branches
 

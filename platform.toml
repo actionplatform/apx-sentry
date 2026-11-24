@@ -1,12 +1,12 @@
 [project]
-name = "apx-example"
+name = "apx-sentry"
 type = "library"
 language = "python"
 ci = "github"
 
 [source_host]
 kind = "github"
-repo = "actionplatform/apx-example"
+repo = "actionplatform/apx-sentry"
 
 [release]
 strategy = "semver"
