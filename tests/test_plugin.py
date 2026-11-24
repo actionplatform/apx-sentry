@@ -87,6 +87,14 @@ class Access(Options):
         self.assertEqual(provider.http.headers["authorization"], "Bearer sntr-x")
         self.assertEqual(provider.http.base, "https://sentry.io")
 
+    def test_the_connection_never_goes_to_the_url_option(self):
+        found = Credential("sentry", "x", "ana", None, SCOPES)
+        provider = SentryPlugin().access(
+            Connected(found, org="acme", url="https://elsewhere.example")
+        )
+
+        self.assertEqual(provider.http.base, "https://sentry.io")
+
     def test_a_self_hosted_connection_keeps_its_url(self):
         found = Credential(
             "sentry", "x", "ana", "https://sentry.example.com/api/0", SCOPES

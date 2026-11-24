@@ -51,7 +51,7 @@ class SentryPlugin(Plugin):
             "token",
             "Token",
             "secret",
-            help="Optional on a platform with Settings → Services → Connect Sentry. Otherwise a personal or internal integration token: member:admin, team:write, org:read to change access; project:read, event:read for the issue tools.",
+            help="Access: optional on a platform with Settings → Services → Connect Sentry, otherwise a personal or internal integration token with member:admin, team:write, org:read. The issue tools always need it, with project:read, event:read.",
         ),
         Option(
             "url",
@@ -101,5 +101,5 @@ class SentryPlugin(Plugin):
         return SentryProvider(
             str(org),
             found.token,
-            (found.api_url or "").removesuffix("/api/0") or url,
+            (found.api_url or "").removesuffix("/api/0") or URL,
         )
