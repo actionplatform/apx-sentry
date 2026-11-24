@@ -1,6 +1,6 @@
 [project]
 name = "apx-sentry"
-version = "0.1.0"
+version = "0.2.0"
 description = "Sentry for Action Platform: organization and team access, and read-only tools for a release's new issues and the errors after a deploy."
 readme = "README.md"
 license = "Apache-2.0"

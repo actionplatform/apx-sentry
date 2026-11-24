@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.0 — 2026-11-24
+
+### Features
+- **access:** use the organization's Sentry connection when no token is set
+
+### Bug Fixes
+- **access:** the connection's token stays on the connection's Sentry
+
+### Docs
+- the issue tools still read a token on the machine
+- Connect Sentry replaces the token on a hosted platform
+- blank line
+- where the access capability runs
+- install from the tag until the package is on PyPI; where access runs
+
 ## v0.1.0 — 2026-11-24
 
 ### Features
