@@ -9,7 +9,7 @@ action-platform sentry release-issues web web@1.4.0
 action-platform sentry latest-errors web 2026-11-24T14:30:00Z
 ```
 
-The access capability runs where the core runs service access: on a hosted platform whose API image carries this plugin, with the options filled under **Plugins** for the organization. The tools and commands run on the machine that installed it.
+The access capability runs where the core runs service access: on a hosted platform whose API image carries this plugin, with the options filled under **Plugins** for the organization. It needs no pasted token there: it uses the organization's Sentry connection (**Settings → Services → Connect Sentry**, core 0.34 or later). The tools and commands run on the machine that installed it.
 
 ## Access
 
@@ -39,13 +39,17 @@ Read-only. MCP tools are `sentry_<name>`; each is also `action-platform sentry <
 
 ## Options
 
-An organization fills them in under Plugins → Sentry → Configure; on a machine the tools read `AP_SENTRY_<KEY>` first, then the plugin's options file. Access reads the options only.
+An organization fills them in under Plugins → Sentry → Configure; on a machine the tools read `AP_SENTRY_<KEY>` first, then the plugin's options file. Access reads the options and the platform's Sentry connection only.
 
 | Option | |
 |---|---|
 | `org` | Organization slug. Access is off while it is empty. |
-| `token` | Secret. A personal or internal integration token. |
+| `token` | Secret, optional on a hosted platform: when empty, access uses the organization's Sentry connection. A personal or internal integration token otherwise. |
 | `url` | Only for a self-hosted Sentry; empty means `https://sentry.io`. |
+
+### The Sentry connection
+
+On a hosted platform (core 0.34 or later) set only `org`, then **Settings → Services → Connect Sentry** with a Sentry account that is a Manager or Owner of the organization. The platform asks Sentry for the scopes this plugin declares — `org:read`, `member:admin`, `team:write` — keeps the token sealed and refreshes it before it expires. A connection that lacks one of them fails the audit with the missing scope; *Reconnect Sentry* grants it. Connecting needs the platform's Sentry OAuth app once (Sentry → User settings → API → Applications, Confidential, the callback URL the platform shows). The token option, when set, wins over the connection. The issue tools (`sentry_*`, `action-platform sentry …`) run on a machine and still read a token from `AP_SENTRY_TOKEN` or the options file.
 
 ### Token scopes
 

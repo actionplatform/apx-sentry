@@ -5,10 +5,15 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from action_platform.abc import Option, Plugin, Surface
+
+try:
+    from action_platform.abc import Connection
+except ImportError:
+    Connection = None
 from action_platform.core.service_access import AccessError, AccessProvider
 
 from apx_sentry import cli
-from apx_sentry.access import SentryProvider
+from apx_sentry.access import SCOPES, SentryProvider
 from apx_sentry.settings import URL
 from apx_sentry.tools import register_tools
 
@@ -24,7 +29,17 @@ class SentryPlugin(Plugin):
     needs = [
         "env: AP_SENTRY_ORG, AP_SENTRY_TOKEN, AP_SENTRY_URL on a machine (the plugin's options on the platform)",
         "net: sentry.io, or the self-hosted Sentry's url",
+        "connection: the organization's Sentry connection on a hosted platform (core 0.34)",
     ]
+    connections = (
+        [
+            Connection(
+                "sentry", SCOPES, (), "manage members and teams of the organization"
+            )
+        ]
+        if Connection
+        else []
+    )
     options = [
         Option(
             "org",
@@ -36,8 +51,7 @@ class SentryPlugin(Plugin):
             "token",
             "Token",
             "secret",
-            help="A personal or internal integration token. To read access: member:read, team:read, org:read. To change it: member:admin, team:write, org:read. For the issue tools: project:read, event:read.",
-            required=True,
+            help="Access: optional on a platform with Settings → Services → Connect Sentry, otherwise a personal or internal integration token with member:admin, team:write, org:read. The issue tools always need it, with project:read, event:read.",
         ),
         Option(
             "url",
@@ -62,8 +76,30 @@ class SentryPlugin(Plugin):
             return None
 
         token = options.get("token")
+        url = options.get("url") or URL
 
-        if not token:
-            raise AccessError("sentry: set the plugin's token option to read access")
+        if token:
+            return SentryProvider(str(org), str(token), url)
 
-        return SentryProvider(str(org), str(token), options.get("url") or URL)
+        credential = getattr(options, "credential", None)
+        found = credential("sentry") if credential else None
+
+        if found is None:
+            raise AccessError(
+                "sentry: connect Sentry under Settings → Services (or set the plugin's token option)"
+            )
+
+        missing = [
+            s for s in SCOPES if found.scopes is not None and s not in found.scopes
+        ]
+
+        if missing:
+            raise AccessError(
+                f"sentry: the Sentry connection lacks {', '.join(missing)}; reconnect Sentry under Settings → Services, which asks for it"
+            )
+
+        return SentryProvider(
+            str(org),
+            found.token,
+            (found.api_url or "").removesuffix("/api/0") or URL,
+        )
