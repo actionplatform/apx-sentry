@@ -9,6 +9,15 @@ action-platform sentry release-issues web web@1.4.0
 action-platform sentry latest-errors web 2026-11-24T14:30:00Z
 ```
 
+
+Until `apx-sentry` is on PyPI and in the plugin index, install it from its release tag into the CLI's environment (`action-platform plugin install sentry` works once it is):
+
+```bash
+pip install "apx-sentry @ git+https://github.com/actionplatform/apx-sentry@v0.1.0"
+```
+
+The access capability runs where the core runs service access: on a hosted platform whose API image carries this plugin, with the options filled under **Plugins** for the organization. The tools and commands run on the machine that installed it.
+
 ## Access
 
 With `org` set, the core's access tools (`access_audit`, `access_who`, `access_sync`, `access_grant`, `access_revoke`, `access_offboard`) read and change Sentry next to the other services. Accounts are member emails.
