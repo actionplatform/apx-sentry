@@ -9,7 +9,6 @@ action-platform sentry release-issues web web@1.4.0
 action-platform sentry latest-errors web 2026-11-24T14:30:00Z
 ```
 
-
 The access capability runs where the core runs service access: on a hosted platform whose API image carries this plugin, with the options filled under **Plugins** for the organization. The tools and commands run on the machine that installed it.
 
 ## Access
