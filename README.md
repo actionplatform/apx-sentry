@@ -49,7 +49,7 @@ An organization fills them in under Plugins → Sentry → Configure; on a machi
 
 ### The Sentry connection
 
-On a hosted platform (core 0.34 or later) set only `org`, then **Settings → Services → Connect Sentry** with a Sentry account that is a Manager or Owner of the organization. The platform asks Sentry for the scopes this plugin declares — `org:read`, `member:admin`, `team:write` — keeps the token sealed and refreshes it before it expires. A connection that lacks one of them fails the audit with the missing scope; *Reconnect Sentry* grants it. Connecting needs the platform's Sentry OAuth app once (Sentry → User settings → API → Applications, Confidential, the callback URL the platform shows). The token option, when set, wins over the connection.
+On a hosted platform (core 0.34 or later) set only `org`, then **Settings → Services → Connect Sentry** with a Sentry account that is a Manager or Owner of the organization. The platform asks Sentry for the scopes this plugin declares — `org:read`, `member:admin`, `team:write` — keeps the token sealed and refreshes it before it expires. A connection that lacks one of them fails the audit with the missing scope; *Reconnect Sentry* grants it. Connecting needs the platform's Sentry OAuth app once (Sentry → User settings → API → Applications, Confidential, the callback URL the platform shows). The token option, when set, wins over the connection. The issue tools (`sentry_*`, `action-platform sentry …`) run on a machine and still read a token from `AP_SENTRY_TOKEN` or the options file.
 
 ### Token scopes
 
