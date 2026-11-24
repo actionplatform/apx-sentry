@@ -110,12 +110,16 @@ class SentryProvider(AccessProvider):
             raise AccessError(f"sentry: cannot apply {g.resource}")
 
     def guard(self, ops: list[Op], live: list[Grant]) -> dict[Op, str]:
-        owners = {g.account for g in live if g.resource == "org" and g.level == "owner"}
+        owners = {
+            g.account.lower()
+            for g in live
+            if g.resource == "org" and g.level == "owner"
+        }
         losing = {
-            op.grant.account
+            op.grant.account.lower()
             for op in ops
             if op.grant.resource == "org"
-            and op.grant.account in owners
+            and op.grant.account.lower() in owners
             and (op.action == "remove" or op.grant.level != "owner")
         }
 
@@ -123,7 +127,7 @@ class SentryProvider(AccessProvider):
             return {
                 op: f"sentry: {op.grant.account} is the last owner of {self.org}"
                 for op in ops
-                if op.grant.resource == "org" and op.grant.account in losing
+                if op.grant.resource == "org" and op.grant.account.lower() in losing
             }
 
         return {}

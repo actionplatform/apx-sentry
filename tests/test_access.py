@@ -175,6 +175,15 @@ class LastOwner(World):
             refused, {op: "sentry: ana@acme.dev is the last owner of acme"}
         )
 
+    def test_the_account_matches_whatever_the_case(self):
+        provider = SentryProvider("acme", "t", http=self.sentry)
+        op = Op("remove", Grant("sentry", "Ana@Acme.dev", "org", "owner"))
+
+        self.assertEqual(
+            provider.guard([op], provider.read()),
+            {op: "sentry: Ana@Acme.dev is the last owner of acme"},
+        )
+
     def test_a_second_owner_lets_the_first_go(self):
         self.sentry.add("zoe@acme.dev", "owner")
         provider = SentryProvider("acme", "t", http=self.sentry)
