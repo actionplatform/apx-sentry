@@ -12,6 +12,8 @@ from action_platform.core.service_access import (
     Op,
 )
 
+SCOPES = ("org:read", "member:admin", "team:write")
+
 
 class SentryProvider(AccessProvider):
     """Accounts are member emails. An added member gets Sentry's invitation email and counts as granted while it is pending."""
