@@ -52,8 +52,6 @@ def _page(items: list, q: dict, size: Optional[int], url: str) -> Response:
 
 
 class FakeSentry(FakeHttp):
-    """The member list carries no teams; team membership and team role come from each team's member list, as on sentry.io. Issues carry `count` as a string and `userCount` as an integer, as the issues listing sends them."""
-
     def __init__(self, page: Optional[int] = None) -> None:
         super().__init__("sentry", "https://sentry.io")
         self.page = page
