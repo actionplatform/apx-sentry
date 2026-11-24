@@ -1,0 +1,40 @@
+[project]
+name = "apx-example"
+version = "0.3.0"
+description = "Template for an Action Platform plugin: tools, a CLI command, an overlay, a release strategy, a replaced slot, lifecycle hooks."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+authors = [{ name = "Action Platform", email = "cloud@actionplatform.io" }]
+dependencies = ["action-platform>=0.32"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "action-platform[mcp]"]
+
+[project.entry-points."action_platform.plugins"]
+example = "apx_example:ExamplePlugin"
+
+[project.entry-points."action_platform.deploy_target"]
+example = "apx_example.target:ExampleTarget"
+
+[project.entry-points."action_platform.release_strategy"]
+calver = "apx_example.release:Calver"
+
+[project.entry-points."action_platform.changelog"]
+plain = "apx_example.release:Plain"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["apx_example*"]
+
+[tool.setuptools.package-data]
+apx_example = ["overlays/**/*"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
